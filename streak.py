@@ -1,99 +1,149 @@
-```python
 import os
-import re
+import json
 import urllib.request
-import datetime
-import xml.etree.ElementTree as ET
+import urllib.error
+from datetime import date, timedelta
 
 USERNAME = os.environ["GITHUB_USERNAME"]
-README = "README.md"
+README_FILE = "README.md"
 
-# GitHub genera un SVG de contribuciones para cada usuario.
-url = f"https://github.com/users/{USERNAME}/contributions"
+# --------------------------------------------------
+# GitHub GraphQL
+# --------------------------------------------------
+
+query = """
+query($login: String!) {
+  user(login: $login) {
+    contributionsCollection {
+      contributionCalendar {
+        totalContributions
+        weeks {
+          contributionDays {
+            date
+            contributionCount
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
+payload = json.dumps({
+    "query": query,
+    "variables": {
+        "login": USERNAME
+    }
+}).encode("utf-8")
 
 request = urllib.request.Request(
-    url,
-    headers={"User-Agent": "github-streak-bot"}
+    "https://api.github.com/graphql",
+    data=payload,
+    headers={
+        "Content-Type": "application/json",
+        "User-Agent": "github-streak"
+    },
+    method="POST"
 )
 
-with urllib.request.urlopen(request) as response:
-    html = response.read().decode("utf-8")
+try:
+    with urllib.request.urlopen(request) as response:
+        data = json.loads(response.read().decode("utf-8"))
+except urllib.error.HTTPError as error:
+    print("Error de GitHub API:", error.read().decode())
+    raise
 
-# Extraemos las fechas y la cantidad de contribuciones.
-pattern = r'<td[^>]*data-date="([^"]+)"[^>]*data-level="([0-4])"'
-matches = re.findall(pattern, html)
+if "errors" in data:
+    print("Error GraphQL:")
+    print(json.dumps(data["errors"], indent=2))
+    raise SystemExit(1)
 
-activity = {}
+user = data.get("data", {}).get("user")
 
-for date, level in matches:
-    activity[date] = int(level)
+if user is None:
+    raise SystemExit(f"No se encontró el usuario: {USERNAME}")
 
-if not activity:
-    print("No se pudieron obtener las contribuciones.")
-    exit(1)
+calendar = user["contributionsCollection"]["contributionCalendar"]
 
-# Ordenar fechas
-dates = sorted(
-    datetime.date.fromisoformat(date)
-    for date in activity
-)
+# --------------------------------------------------
+# Obtener todos los días
+# --------------------------------------------------
 
-# Solo cuentan los días con al menos una contribución.
+days = {}
+
+for week in calendar["weeks"]:
+    for contribution_day in week["contributionDays"]:
+        day = contribution_day["date"]
+        count = contribution_day["contributionCount"]
+
+        days[day] = count
+
 active_days = {
-    date for date, level in activity.items()
-    if level > 0
+    date.fromisoformat(day)
+    for day, count in days.items()
+    if count > 0
 }
 
-today = datetime.date.today()
+if not active_days:
+    current_streak = 0
+    max_streak = 0
+    last_activity = None
 
-# --------------------------------------------------
-# CALCULAR RACHA ACTUAL
-# --------------------------------------------------
+else:
+    # --------------------------------------------------
+    # Racha actual
+    # --------------------------------------------------
 
-current_streak = 0
-day = today
+    today = date.today()
 
-# Si hoy todavía no hubo actividad, permitimos que
-# la racha continúe desde ayer.
-if day not in active_days:
-    day -= datetime.timedelta(days=1)
-
-while day in active_days:
-    current_streak += 1
-    day -= datetime.timedelta(days=1)
-
-# --------------------------------------------------
-# CALCULAR RACHA MÁXIMA
-# --------------------------------------------------
-
-max_streak = 0
-streak = 0
-previous = None
-
-for date in dates:
-    if date not in active_days:
-        continue
-
-    if previous is not None and date == previous + datetime.timedelta(days=1):
-        streak += 1
+    if today in active_days:
+        check_day = today
+    elif today - timedelta(days=1) in active_days:
+        check_day = today - timedelta(days=1)
     else:
-        streak = 1
+        check_day = None
 
-    max_streak = max(max_streak, streak)
-    previous = date
+    current_streak = 0
 
-# Última actividad
-last_activity = max(active_days) if active_days else None
+    if check_day:
+        while check_day in active_days:
+            current_streak += 1
+            check_day -= timedelta(days=1)
+
+    # --------------------------------------------------
+    # Racha máxima
+    # --------------------------------------------------
+
+    sorted_days = sorted(active_days)
+
+    max_streak = 1
+    streak = 1
+
+    for i in range(1, len(sorted_days)):
+        previous = sorted_days[i - 1]
+        current = sorted_days[i]
+
+        if current == previous + timedelta(days=1):
+            streak += 1
+        else:
+            streak = 1
+
+        max_streak = max(max_streak, streak)
+
+    last_activity = max(active_days)
+
+# --------------------------------------------------
+# Formato
+# --------------------------------------------------
 
 if last_activity:
     last_activity_text = last_activity.strftime("%d/%m/%Y")
 else:
     last_activity_text = "Nunca"
 
-# --------------------------------------------------
-# BARRA VISUAL
-# --------------------------------------------------
+total_contributions = calendar["totalContributions"]
 
+# Barra visual
 bar_length = 10
 filled = min(current_streak, bar_length)
 
@@ -109,38 +159,49 @@ else:
     emoji = "✨"
 
 new_section = f"""<!-- STREAK_START -->
-{emoji} **Racha actual:** {current_streak} días  
-🏆 **Racha máxima:** {max_streak} días  
+## 🔥 Mi racha
+
+{emoji} **Racha actual:** {current_streak} días
+
+🏆 **Racha máxima:** {max_streak} días
+
 📅 **Última actividad:** {last_activity_text}
+
+📊 **Contribuciones:** {total_contributions}
 
 `{bar}` 🔥
 <!-- STREAK_END -->"""
 
 # --------------------------------------------------
-# ACTUALIZAR README
+# Actualizar README
 # --------------------------------------------------
 
-with open(README, "r", encoding="utf-8") as file:
+with open(README_FILE, "r", encoding="utf-8") as file:
     readme = file.read()
 
-pattern = r"<!-- STREAK_START -->.*?<!-- STREAK_END -->"
+start_marker = "<!-- STREAK_START -->"
+end_marker = "<!-- STREAK_END -->"
 
-if not re.search(pattern, readme, flags=re.DOTALL):
-    print("No se encontraron las marcas STREAK_START/STREAK_END.")
-    exit(1)
+if start_marker not in readme or end_marker not in readme:
+    raise SystemExit(
+        "No se encontraron STREAK_START y STREAK_END en README.md"
+    )
 
-readme = re.sub(
-    pattern,
-    new_section,
-    readme,
-    flags=re.DOTALL
+start = readme.index(start_marker)
+end = readme.index(end_marker) + len(end_marker)
+
+readme = (
+    readme[:start]
+    + new_section
+    + readme[end:]
 )
 
-with open(README, "w", encoding="utf-8") as file:
+with open(README_FILE, "w", encoding="utf-8") as file:
     file.write(readme)
 
-print(
-    f"Racha actual: {current_streak} días | "
-    f"Racha máxima: {max_streak} días"
-)
-```
+print("================================")
+print("🔥 Racha actual:", current_streak)
+print("🏆 Racha máxima:", max_streak)
+print("📅 Última actividad:", last_activity_text)
+print("📊 Contribuciones:", total_contributions)
+print("================================")
