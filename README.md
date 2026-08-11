@@ -32,7 +32,7 @@ La tarjeta de racha se actualiza automáticamente mediante GitHub Actions.
 <p align="center">
   
   <img src="https://miro.medium.com/1*5GTKx0a2tf7mAMYnplvBeg.png" width="100" />
-  <img src="https://www.python.org/community/logos/" width="100" />
+  <img src="/python-logo-only.png" width="100" />
   <img src="https://images.icon-icons.com/2415/PNG/512/typescript_original_logo_icon_146317.png" width="100" />
 
 </p>
