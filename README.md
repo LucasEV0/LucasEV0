@@ -3,13 +3,17 @@
 ## 🔥 Mi racha de GitHub
 
 <!-- STREAK_START -->
+## 🔥 Mi racha
 
-🔥 **Racha actual:** 0 días
-🏆 **Racha máxima:** 0 días
-📅 **Última actividad:** Nunca
+✨ **Racha actual:** 2 días
 
-`░░░░░░░░░░` 🔥
+🏆 **Racha máxima:** 3 días
 
+📅 **Última actividad:** 10/08/2026
+
+📊 **Contribuciones:** 124
+
+`██░░░░░░░░` 🔥
 <!-- STREAK_END -->
 
 ---
