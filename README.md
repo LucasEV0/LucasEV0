@@ -31,8 +31,8 @@ La tarjeta de racha se actualiza automáticamente mediante GitHub Actions.
  </p>
 <p align="center">
   
-  <img src="https://users.rust-lang.org/t/ideas-for-redesigning-the-rust-logo/26051" width="100" />
-  <img src="https://es.wikipedia.org/wiki/Archivo:Python-logo-notext.svg" width="100" />
+  <img src="https://miro.medium.com/1*5GTKx0a2tf7mAMYnplvBeg.png" width="100" />
+  <img src="/python.png" width="100" />
   <img src="https://images.icon-icons.com/2415/PNG/512/typescript_original_logo_icon_146317.png" width="100" />
 
 </p>
