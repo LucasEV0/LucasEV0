@@ -37,7 +37,3 @@ La tarjeta de racha se actualiza automáticamente mediante GitHub Actions.
 
 </p>
 
-## Technology's
-* JavaScript
-  * React (Native)
-  * NodeJS: Express
