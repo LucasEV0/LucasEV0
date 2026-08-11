@@ -1,3 +1,4 @@
+
 import os
 import json
 import urllib.request
@@ -5,11 +6,8 @@ import urllib.error
 from datetime import date, timedelta
 
 USERNAME = os.environ["GITHUB_USERNAME"]
+TOKEN = os.environ["GITHUB_TOKEN"]
 README_FILE = "README.md"
-
-# --------------------------------------------------
-# GitHub GraphQL
-# --------------------------------------------------
 
 query = """
 query($login: String!) {
@@ -41,7 +39,8 @@ request = urllib.request.Request(
     data=payload,
     headers={
         "Content-Type": "application/json",
-        "User-Agent": "github-streak"
+        "User-Agent": "github-streak",
+        "Authorization": f"Bearer {TOKEN}"
     },
     method="POST"
 )
@@ -49,8 +48,10 @@ request = urllib.request.Request(
 try:
     with urllib.request.urlopen(request) as response:
         data = json.loads(response.read().decode("utf-8"))
+
 except urllib.error.HTTPError as error:
-    print("Error de GitHub API:", error.read().decode())
+    print("Error de GitHub API:")
+    print(error.read().decode())
     raise
 
 if "errors" in data:
@@ -65,17 +66,12 @@ if user is None:
 
 calendar = user["contributionsCollection"]["contributionCalendar"]
 
-# --------------------------------------------------
-# Obtener todos los días
-# --------------------------------------------------
-
 days = {}
 
 for week in calendar["weeks"]:
     for contribution_day in week["contributionDays"]:
         day = contribution_day["date"]
         count = contribution_day["contributionCount"]
-
         days[day] = count
 
 active_days = {
@@ -84,16 +80,16 @@ active_days = {
     if count > 0
 }
 
+# -------------------------------
+# RACHA ACTUAL
+# -------------------------------
+
 if not active_days:
     current_streak = 0
     max_streak = 0
     last_activity = None
 
 else:
-    # --------------------------------------------------
-    # Racha actual
-    # --------------------------------------------------
-
     today = date.today()
 
     if today in active_days:
@@ -110,9 +106,9 @@ else:
             current_streak += 1
             check_day -= timedelta(days=1)
 
-    # --------------------------------------------------
-    # Racha máxima
-    # --------------------------------------------------
+    # -------------------------------
+    # RACHA MÁXIMA
+    # -------------------------------
 
     sorted_days = sorted(active_days)
 
@@ -120,10 +116,7 @@ else:
     streak = 1
 
     for i in range(1, len(sorted_days)):
-        previous = sorted_days[i - 1]
-        current = sorted_days[i]
-
-        if current == previous + timedelta(days=1):
+        if sorted_days[i] == sorted_days[i - 1] + timedelta(days=1):
             streak += 1
         else:
             streak = 1
@@ -132,22 +125,20 @@ else:
 
     last_activity = max(active_days)
 
-# --------------------------------------------------
-# Formato
-# --------------------------------------------------
+# -------------------------------
+# DATOS
+# -------------------------------
 
-if last_activity:
-    last_activity_text = last_activity.strftime("%d/%m/%Y")
-else:
-    last_activity_text = "Nunca"
+last_activity_text = (
+    last_activity.strftime("%d/%m/%Y")
+    if last_activity
+    else "Nunca"
+)
 
 total_contributions = calendar["totalContributions"]
 
-# Barra visual
-bar_length = 10
-filled = min(current_streak, bar_length)
-
-bar = "█" * filled + "░" * (bar_length - filled)
+filled = min(current_streak, 10)
+bar = "█" * filled + "░" * (10 - filled)
 
 if current_streak >= 30:
     emoji = "🔥🔥🔥"
@@ -172,9 +163,9 @@ new_section = f"""<!-- STREAK_START -->
 `{bar}` 🔥
 <!-- STREAK_END -->"""
 
-# --------------------------------------------------
-# Actualizar README
-# --------------------------------------------------
+# -------------------------------
+# README
+# -------------------------------
 
 with open(README_FILE, "r", encoding="utf-8") as file:
     readme = file.read()
@@ -190,11 +181,7 @@ if start_marker not in readme or end_marker not in readme:
 start = readme.index(start_marker)
 end = readme.index(end_marker) + len(end_marker)
 
-readme = (
-    readme[:start]
-    + new_section
-    + readme[end:]
-)
+readme = readme[:start] + new_section + readme[end:]
 
 with open(README_FILE, "w", encoding="utf-8") as file:
     file.write(readme)
