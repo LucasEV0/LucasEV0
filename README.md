@@ -5,7 +5,7 @@
 <!-- STREAK_START -->
 ## 🔥 Mi racha
 
-✨ **Racha actual:** 4 días
+✨ **Racha actual:** 0 días
 
 🏆 **Racha máxima:** 4 días
 
@@ -13,7 +13,7 @@
 
 📊 **Contribuciones:** 160
 
-`████░░░░░░` 🔥
+`░░░░░░░░░░` 🔥
 <!-- STREAK_END -->
 
 ---
