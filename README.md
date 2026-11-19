@@ -5,15 +5,15 @@
 <!-- STREAK_START -->
 ## 🔥 Mi racha
 
-✨ **Racha actual:** 0 días
+✨ **Racha actual:** 1 días
 
 🏆 **Racha máxima:** 4 días
 
-📅 **Última actividad:** 27/10/2026
+📅 **Última actividad:** 19/11/2026
 
-📊 **Contribuciones:** 125
+📊 **Contribuciones:** 126
 
-`░░░░░░░░░░` 🔥
+`█░░░░░░░░░` 🔥
 <!-- STREAK_END -->
 
 ---
